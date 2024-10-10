@@ -53,6 +53,7 @@ class PBSProProvider(TorqueProvider):
         Launcher for this provider. The default is
         :class:`~parsl.launchers.SingleNodeLauncher`.
     """
+
     def __init__(self,
                  channel=LocalChannel(),
                  account=None,
@@ -214,6 +215,16 @@ class PBSProProvider(TorqueProvider):
             logger.error(message)
 
         return job_id
+
+    def cancel(self, job_ids):
+        job_id_list = ' '.join(job_ids)
+        retcode, stdout, stderr = self.execute_wait("qdel {0}".format(job_id_list))
+        if retcode == 0:
+            for jid in job_ids:
+                self.resources[jid]['status'] = JobStatus(JobState.COMPLETED)
+            return [True for i in job_ids]
+        else:
+            return [False for i in job_ids]
 
     @property
     def status_polling_interval(self):
